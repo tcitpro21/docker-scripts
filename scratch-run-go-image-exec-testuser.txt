@@ -1,0 +1,126 @@
+#https://hub.docker.com/_/golang
+#
+mkdir --parents ${HOME}/x-work/research/x-code/go
+mkdir --parents ${HOME}/x-work/research/x-code/go/go.dev
+mkdir --parents ${HOME}/x-work/research/x-code/go/go.doc
+#
+# pull the image
+sudo docker pull golang:1.19.2-bullseye
+#
+#
+sudo docker run \
+--interactive --tty --detach=true --rm \
+--name="${USER}-golang" \
+golang:1.19.2-bullseye
+#
+## exec into image
+#sudo docker exec \
+#--interactive --tty \
+#$(sudo docker ps --quiet --filter "name=${USER}-golang") \
+#/bin/bash
+#
+# convenience, match container user to host user, uid:gid
+# dynamically CREATE A NON ROOT USER testuser 
+#  assumes feature /bin/bash,groupadd,useradd,sudo
+#  assumes context named runnin image
+sudo docker exec \
+--interactive --tty \
+$(sudo docker ps --quiet --filter "name=${USER}-golang") \
+/bin/bash -c "groupadd --non-unique --gid=$(id -g) testuser && useradd --create-home --non-unique --uid=$(id -u) --gid=$(id -g) --groups=sudo testuser"
+#
+# exec into image
+#  assumes exist user:group testuser:testuser
+#  assumes feature /bin/bash
+#  assumes context named runnin image
+sudo docker exec \
+--user="testuser:testuser" \
+--interactive --tty \
+--workdir=""
+$(sudo docker ps --quiet --filter "name=${USER}-golang") \
+/bin/bash
+# cd ${HOME}
+# pwd
+#
+# STOP image
+#  assumes context named runnin image
+sudo docker stop \
+$(sudo docker ps --quiet --filter "name=${USER}-golang")
+#
+#
+#
+# dynamic user create solution is dynamic robust with added uid gid convenience 
+# since go install assign no group, adding sudo to give rootlike
+# no password..lazy dev or cert auth..cloud-init any1?
+#
+# preferred static solution is to create the user at image create
+# most containers run as root, non-root user is DISA & NSA guidance
+# create new dockerfile.. 
+# FROM the existing image,
+# RUN groupadd testuser && useradd --create-home --gid=testuser --groups=sudo testuser
+# build, tag/name
+#
+#
+#
+#
+# start with a volume mount
+# volume target on container will create or overwrite
+sudo docker run \
+--interactive --tty --detach=true --rm \
+--volume="${HOME}/x-work/research/x-code/go/go.dev":"/home/testuser" \
+--name="${USER}-golang" \
+golang:1.19.2-bullseye
+#
+# create user
+sudo docker exec \
+--interactive --tty \
+$(sudo docker ps --quiet --filter "name=${USER}-golang") \
+/bin/bash -c "groupadd --non-unique --gid=$(id -g) testuser && useradd --create-home --non-unique --uid=$(id -u) --gid=$(id -g) --groups=sudo testuser"
+#
+# exec into image
+sudo docker exec \
+--user="testuser:testuser" \
+--interactive --tty \
+--workdir="/home/testuser" \
+$(sudo docker ps --quiet --filter "name=${USER}-golang") \
+/bin/bash
+#
+## cd hello
+## go run .
+#
+# build against a runnin container
+sudo docker exec \
+--user="testuser:testuser" \
+--workdir="/home/testuser" \
+$(sudo docker ps --quiet --filter "name=${USER}-golang") \
+/bin/bash -c "go build -v"
+#
+#
+# STOP NODE APP image
+sudo docker stop \
+$(sudo docker ps --quiet --filter "name=${USER}-golang")
+#
+#
+# MOST typical scenario
+# build 1-off, 
+#  user arg uid:gid for access convenience
+#sudo docker run --rm -v "$PWD":/usr/src/myapp -w /usr/src/myapp golang:1.19 go build -v
+sudo docker run \
+--rm \
+--user="$(id -u)":"$(id -g)" \
+--volume="${HOME}/x-work/research/x-code/go/go.dev":"/usr/src/myapp" \
+--workdir="/usr/src/myapp" \
+--name="${USER}-golang" \
+golang:1.19.2-bullseye \
+/bin/bash -c "go version > test2.txt"
+#go build -v
+#
+#
+#
+#
+#rm --recursive --force "${HOME}/x-work/research/x-code/go/go.dev/*"
+#
+mkdir --parents ${HOME}/hello
+#
+cd ${HOME}/hello
+#
+#${HOME}/x-work/research/x-code/go/go.dev
